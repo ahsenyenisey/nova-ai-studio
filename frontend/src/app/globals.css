@@ -1,0 +1,80 @@
+@import "tailwindcss";
+
+/*
+  NOVA — "Deep Space Observatory" tasarım sistemi.
+  Renk paleti, tipografi ve efekt tokenları tek doğruluk kaynağı olarak
+  burada tanımlanır (bkz. CLAUDE.md). Yalnızca karanlık tema.
+*/
+
+@theme {
+  /* Renk paleti */
+  --color-bg-void: #05060f;
+  --color-bg-nebula: #0b0e1f;
+  --color-surface-glass: rgba(255, 255, 255, 0.04);
+  --color-border-glow: rgba(120, 140, 255, 0.15);
+  --color-primary: #6c7bff;
+  --color-accent-cyan: #4ee1d0;
+  --color-accent-amber: #ffb454;
+  --color-danger: #ff5c7a;
+  --color-text-primary: #e8eaf6;
+  --color-text-muted: #8b90b3;
+
+  /* Tipografi — next/font değişkenlerine bağlanır */
+  --font-display: var(--font-space-grotesk);
+  --font-sans: var(--font-inter);
+  --font-mono: var(--font-jetbrains-mono);
+
+  /* Sinematik geçiş eğrisi (CLAUDE.md) */
+  --ease-cinematic: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+html {
+  color-scheme: dark;
+}
+
+body {
+  background-color: var(--color-bg-void);
+  color: var(--color-text-primary);
+  font-family: var(--font-sans), system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Başlıklar geniş letter-spacing ile display fontu kullanır */
+h1,
+h2,
+h3 {
+  font-family: var(--font-display), system-ui, sans-serif;
+  letter-spacing: 0.02em;
+}
+
+/* Metrik/sayı sunumları için yardımcı sınıf */
+.font-metric {
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-variant-numeric: tabular-nums;
+}
+
+/*
+  Nebula orb'ları için yavaş sürüklenme animasyonu.
+  Yalnızca transform/opacity kullanır → layout tetiklemez.
+*/
+@keyframes nova-drift {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  50% {
+    transform: translate3d(4%, -3%, 0) scale(1.08);
+  }
+}
+
+/* Erişilebilirlik: hareket azaltma tercihine saygı (CLAUDE.md zorunlu) */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}
