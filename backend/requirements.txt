@@ -1,5 +1,6 @@
 # Python 3.14 için önceden derlenmiş wheel'i olan sürümlere sabitlendi.
 fastapi==0.139.0
+python-multipart==0.0.32
 uvicorn[standard]==0.50.0
 pydantic==2.13.4
 pandas==3.0.3

@@ -34,6 +34,13 @@ npm run dev
 # → http://localhost:3000
 ```
 
+Frontend, backend adresini `NEXT_PUBLIC_API_URL` ortam değişkeninden okur
+(varsayılan `http://localhost:8000`). Gerekiyorsa `frontend/.env.local`:
+
+```bash
+NEXT_PUBLIC_API_URL=http://localhost:8000
+```
+
 ## Testler
 
 ```bash
@@ -41,12 +48,12 @@ npm run dev
 cd backend && source .venv/bin/activate && pytest -q
 
 # Frontend
-cd frontend && npm run lint && npx tsc --noEmit
+cd frontend && npm run lint && npx tsc --noEmit && npm run build
 ```
 
 ## Geliştirme Fazları
 
 - **Faz 1 — İskelet** ✅ Monorepo, health endpoint, tasarım sistemi, sinematik landing.
-- **Faz 2 — Veri Yükleme + EDA** — Upload, drag & drop, animasyonlu EDA dashboard.
+- **Faz 2 — Veri Yükleme + EDA** ✅ Upload (encoding zinciri + doğrulama), drag & drop, animasyonlu EDA dashboard (sütun tipleri, eksik harita, korelasyon ısı haritası, dağılımlar, sütun seçici).
 - **Faz 3 — Model Eğitimi** — Train endpoint, eğitim ekranı, metrik panelleri.
 - **Faz 4 — Tahmin + Cila** — Predict akışı, model listesi, empty/error state'ler, responsive.

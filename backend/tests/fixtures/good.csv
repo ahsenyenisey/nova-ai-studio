@@ -1,0 +1,6 @@
+age,city,score,active
+30,Istanbul,4.5,true
+25,Ankara,3.1,false
+40,Istanbul,,true
+22,Izmir,2.8,false
+35,Ankara,5.0,true
