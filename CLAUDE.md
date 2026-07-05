@@ -139,11 +139,15 @@ Her fazı ayrı ayrı iste; faz bitmeden sonrakine geçme.
   sinematik landing page.
 - **Faz 2 — Veri Yükleme + EDA:** Upload endpoint'i, drag & drop arayüzü,
   otomatik EDA hesaplamaları ve animasyonlu EDA dashboard'u.
-- **Faz 3 — Model Eğitimi:** Train endpoint'i (problem tipini otomatik algıla:
-  hedef sayısal → regresyon, kategorik → sınıflandırma), eğitim ekranı,
-  metrik panelleri.
-- **Faz 4 — Tahmin + Cila:** Predict akışı, model listesi, boş durum (empty
-  state) tasarımları, hata durumları, `prefers-reduced-motion`, responsive
+- **Faz 3 — Model Eğitimi (+ minimal Tahmin):** Train endpoint'i (SSE ile gerçek
+  adımlı ilerleme; problem tipini otomatik algıla: hedef sayısal → regresyon,
+  kategorik → sınıflandırma; sayısal ama az-kategorili ise sınıflandırma önerilir,
+  kullanıcı override eder), eğitim ekranı, metrik panelleri, feature importance.
+  Eğitim ve tahmin **tek bir sklearn Pipeline**'ı paylaşır. `/api/predict` bu fazda
+  **minimal** (tekil tahmin) olarak gelir; şeması Faz 4-uyumlu tasarlanır.
+- **Faz 4 — Tahmin + Cila:** Tahmin UI'ı (form + toplu CSV), güven skoru/aralık
+  detayı, model listesi ekranı, `source_dataset_available` rozeti, boş durum
+  (empty state) tasarımları, hata durumları, `prefers-reduced-motion`, responsive
   düzeltmeler, README.
 
 ---

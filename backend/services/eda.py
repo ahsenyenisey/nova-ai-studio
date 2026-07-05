@@ -22,6 +22,7 @@ from models.schemas import (
     TopValue,
 )
 from services.csv_loader import infer_type
+from services.ranking import select_top
 
 DEFAULT_CHART_COLUMNS = 15
 HISTOGRAM_BINS = 20
@@ -98,23 +99,17 @@ def select_numeric_columns(
     if len(cols) <= limit:
         return cols
 
-    scored: list[tuple[int, float, str]] = []
-    for order, col in enumerate(cols):
+    scores: list[float] = []
+    for col in cols:
         clean = df[col].dropna()
         if len(clean) < 2:
-            var = 0.0
-        else:
-            lo, hi = float(clean.min()), float(clean.max())
-            if hi > lo:
-                norm = (clean - lo) / (hi - lo)
-                var = float(norm.var())
-            else:
-                var = 0.0
-        scored.append((order, var, col))
+            scores.append(0.0)
+            continue
+        lo, hi = float(clean.min()), float(clean.max())
+        scores.append(float(((clean - lo) / (hi - lo)).var()) if hi > lo else 0.0)
 
-    # Varyans azalan; eşitlikte orijinal sıra (order artan).
-    scored.sort(key=lambda t: (-t[1], t[0]))
-    return [col for _, _, col in scored[:limit]]
+    selected, _ = select_top(cols, scores, limit)
+    return selected
 
 
 # --- Korelasyon ve dağılımlar --------------------------------------------

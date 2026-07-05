@@ -8,10 +8,10 @@ from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
-from routers import eda, upload
+from routers import eda, models, train, upload
 from services.errors import ApiError
 
-app = FastAPI(title="NOVA API", version="0.2.0")
+app = FastAPI(title="NOVA API", version="0.3.0")
 
 # Frontend geliştirme sunucusu (Next.js) için CORS.
 app.add_middleware(
@@ -40,3 +40,5 @@ def health() -> dict[str, str]:
 
 app.include_router(upload.router)
 app.include_router(eda.router)
+app.include_router(train.router)
+app.include_router(models.router)

@@ -53,3 +53,24 @@ def dataset_not_found() -> ApiError:
         "Veri seti bulunamadı. Yeniden yüklemeniz gerekebilir.",
         status_code=404,
     )
+
+
+def invalid_target(detail: str) -> ApiError:
+    return ApiError("INVALID_TARGET", detail, status_code=400)
+
+
+def model_not_found() -> ApiError:
+    return ApiError(
+        "MODEL_NOT_FOUND",
+        "Model bulunamadı. Yeniden eğitmeniz gerekebilir.",
+        status_code=404,
+    )
+
+
+def model_dataset_evicted() -> ApiError:
+    return ApiError(
+        "MODEL_DATASET_EVICTED",
+        "Bu işlem kaynak veri setini gerektiriyor ancak veri seti bellekten "
+        "düştü. Lütfen CSV'yi yeniden yükleyin.",
+        status_code=409,
+    )

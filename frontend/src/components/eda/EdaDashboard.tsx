@@ -1,7 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { AlertTriangle, ArrowLeft } from "lucide-react";
+import { AlertTriangle, ArrowLeft, Brain } from "lucide-react";
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
@@ -103,12 +103,19 @@ export function EdaDashboard({ datasetId }: { datasetId: string }) {
         className="mt-8 flex items-center justify-between"
       >
         <h1 className="text-2xl font-bold">Keşifsel Analiz</h1>
-        <ColumnSelector
-          allNumeric={allNumeric}
-          selected={charts.selected_columns}
-          loading={chartsLoading}
-          onApply={applyColumns}
-        />
+        <div className="flex items-center gap-3">
+          <ColumnSelector
+            allNumeric={allNumeric}
+            selected={charts.selected_columns}
+            loading={chartsLoading}
+            onApply={applyColumns}
+          />
+          <Link href={`/studio/train/${datasetId}`}>
+            <Button icon={Brain} className="!px-4 !py-2 text-sm">
+              Model Eğit
+            </Button>
+          </Link>
+        </div>
       </motion.div>
 
       <div className="mt-6 grid grid-cols-1 gap-6 md:grid-cols-2">

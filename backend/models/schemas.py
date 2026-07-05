@@ -121,3 +121,109 @@ class EdaResponse(BaseModel):
 
 # Pydantic v2: ileri referansları (TopValue ColumnStats'tan önce geçiyor) çöz.
 ColumnStats.model_rebuild()
+
+
+# --- Model eğitimi (Faz 3) ------------------------------------------------
+
+ProblemType = Literal["classification", "regression"]
+ModelType = Literal["random_forest", "gradient_boosting", "linear"]
+Tone = Literal["confident", "unsure"]
+
+
+class TargetAnalysisResponse(BaseModel):
+    column: str
+    inferred_type: InferredType
+    unique_count: int
+    sample_values: list[str]
+    trainable: bool
+    suggested_problem_type: ProblemType | None
+    tone: Tone | None
+    reason: str
+    error: ErrorDetail | None = None
+
+
+class TrainRequest(BaseModel):
+    dataset_id: str
+    target_column: str
+    model_type: ModelType = "random_forest"
+    # None → otomatik öneri kullanılır; aksi halde override.
+    problem_type: ProblemType | None = None
+
+
+class FeatureSchemaItem(BaseModel):
+    name: str
+    type: Literal["numeric", "categorical"]
+    categories: list[str] | None = None
+
+
+class ConfusionMatrix(BaseModel):
+    labels: list[str]
+    matrix: list[list[int]]
+
+
+class ClassificationMetrics(BaseModel):
+    accuracy: float
+    f1: float
+    precision: float
+    recall: float
+    class_labels: list[str]
+    confusion_matrix: ConfusionMatrix
+
+
+class ResidualPoint(BaseModel):
+    actual: float
+    predicted: float
+
+
+class RegressionMetrics(BaseModel):
+    r2: float
+    mae: float
+    rmse: float
+    residuals: list[ResidualPoint]
+
+
+class FeatureImportanceItem(BaseModel):
+    name: str
+    importance: float
+
+
+class ImportanceList(BaseModel):
+    items: list[FeatureImportanceItem]
+    total: int
+    hidden_count: int
+
+
+class ModelSummary(BaseModel):
+    model_id: str
+    filename: str
+    target_column: str
+    problem_type: ProblemType
+    model_type: ModelType
+    created_at: str
+    n_train: int
+    n_test: int
+    source_dataset_available: bool
+    primary_metric_name: str
+    primary_metric_value: float
+
+
+class ModelDetail(ModelSummary):
+    feature_schema: list[FeatureSchemaItem]
+    classification: ClassificationMetrics | None = None
+    regression: RegressionMetrics | None = None
+    importance: ImportanceList
+
+
+class PredictRequest(BaseModel):
+    model_id: str
+    features: dict[str, str | float | bool | None]
+
+
+class PredictResponse(BaseModel):
+    model_id: str
+    problem_type: ProblemType
+    prediction: str | float
+    # Sınıflandırmada sınıf→olasılık; regresyonda None (Faz 4'te aralık eklenecek).
+    probabilities: dict[str, float] | None = None
+    confidence: float | None = None
+    warnings: list[str] = []

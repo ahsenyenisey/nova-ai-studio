@@ -81,6 +81,11 @@ def get_eda(record: DatasetRecord) -> EdaResponse:
     return response
 
 
+def has_dataset(dataset_id: str) -> bool:
+    """Veri seti bellekte mi (LRU sırasını etkilemez)."""
+    return dataset_id in _DATASETS
+
+
 def clear() -> None:
     """Testler için deposu sıfırlar."""
     _DATASETS.clear()

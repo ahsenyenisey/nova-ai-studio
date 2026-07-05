@@ -9,6 +9,16 @@ import type {
   EdaResponse,
   UploadResponse,
 } from "@/lib/eda-types";
+import type {
+  ImportanceList,
+  ModelDetail,
+  ModelSummary,
+  ModelType,
+  PredictResponse,
+  ProblemType,
+  TargetAnalysis,
+  TrainEvent,
+} from "@/lib/train-types";
 
 const BASE_URL =
   process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
@@ -90,4 +100,102 @@ export async function fetchColumns(
     `${BASE_URL}/api/eda/${encodeURIComponent(datasetId)}/columns${query}`,
   );
   return parseOrThrow<ChartData>(res);
+}
+
+// --- Eğitim / model / tahmin (Faz 3) -------------------------------------
+
+export async function analyzeTarget(
+  datasetId: string,
+  column: string,
+): Promise<TargetAnalysis> {
+  const res = await fetch(
+    `${BASE_URL}/api/train/target/${encodeURIComponent(datasetId)}?column=${encodeURIComponent(column)}`,
+  );
+  return parseOrThrow<TargetAnalysis>(res);
+}
+
+export interface TrainBody {
+  dataset_id: string;
+  target_column: string;
+  model_type: ModelType;
+  problem_type?: ProblemType;
+}
+
+/**
+ * Eğitimi başlatır ve SSE olaylarını `onEvent` ile akıtır (fetch + ReadableStream).
+ * Akış başlamadan gelen hata (ör. INVALID_TARGET) ApiError olarak fırlatılır.
+ */
+export async function trainStream(
+  body: TrainBody,
+  onEvent: (event: TrainEvent) => void,
+): Promise<void> {
+  let res: Response;
+  try {
+    res = await fetch(`${BASE_URL}/api/train`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    });
+  } catch {
+    throw new ApiError("NETWORK", "Sunucuya ulaşılamadı.", 0);
+  }
+
+  if (!res.ok || !res.body) {
+    // Akış başlamadan hata → JSON gövdesi.
+    const data: unknown = await res.json().catch(() => null);
+    if (isErrorBody(data)) {
+      throw new ApiError(data.error.code, data.error.message, res.status);
+    }
+    throw new ApiError("UNKNOWN", `Eğitim başlatılamadı (${res.status}).`, res.status);
+  }
+
+  const reader = res.body.getReader();
+  const decoder = new TextDecoder();
+  let buffer = "";
+  for (;;) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    buffer += decoder.decode(value, { stream: true });
+    const chunks = buffer.split("\n\n");
+    buffer = chunks.pop() ?? "";
+    for (const chunk of chunks) {
+      const line = chunk.trim();
+      if (line.startsWith("data: ")) {
+        onEvent(JSON.parse(line.slice(6)) as TrainEvent);
+      }
+    }
+  }
+}
+
+export async function fetchModels(): Promise<ModelSummary[]> {
+  const res = await fetch(`${BASE_URL}/api/models`);
+  return parseOrThrow<ModelSummary[]>(res);
+}
+
+export async function fetchModel(modelId: string): Promise<ModelDetail> {
+  const res = await fetch(`${BASE_URL}/api/models/${encodeURIComponent(modelId)}`);
+  return parseOrThrow<ModelDetail>(res);
+}
+
+export async function fetchImportance(
+  modelId: string,
+  limit?: number,
+): Promise<ImportanceList> {
+  const query = limit ? `?limit=${limit}` : "";
+  const res = await fetch(
+    `${BASE_URL}/api/models/${encodeURIComponent(modelId)}/importance${query}`,
+  );
+  return parseOrThrow<ImportanceList>(res);
+}
+
+export async function predict(
+  modelId: string,
+  features: Record<string, string | number | boolean | null>,
+): Promise<PredictResponse> {
+  const res = await fetch(`${BASE_URL}/api/predict`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ model_id: modelId, features }),
+  });
+  return parseOrThrow<PredictResponse>(res);
 }

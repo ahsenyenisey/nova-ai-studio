@@ -9,7 +9,8 @@ Tüm hatalar şu formatta döner:
 ```
 
 **Hata kodları:** `FILE_TOO_LARGE` (413), `EMPTY_FILE` (400),
-`INVALID_ENCODING` (400), `INVALID_CSV` (400), `DATASET_NOT_FOUND` (404).
+`INVALID_ENCODING` (400), `INVALID_CSV` (400), `DATASET_NOT_FOUND` (404),
+`INVALID_TARGET` (400), `MODEL_NOT_FOUND` (404), `MODEL_DATASET_EVICTED` (409).
 
 ---
 
@@ -117,13 +118,67 @@ uygulanır. Geçersiz/sayısal-olmayan adlar yok sayılır.
 
 ---
 
-## Planlanan Endpoint'ler (Faz 3+)
+## Model Eğitimi & Tahmin (Faz 3)
 
-| Endpoint | Faz | Açıklama |
-|----------|-----|----------|
-| `POST /api/train` | Faz 3 | `{ dataset_id, target_column, model_type }` → metrikler. |
-| `POST /api/predict` | Faz 4 | `{ model_id, features }` → tahmin + güven skoru. |
-| `GET /api/models` | Faz 4 | Eğitilmiş modellerin listesi. |
+### `GET /api/train/target/{dataset_id}?column=`
 
-> Not: Veri setleri ve modeller MVP'de bellekte (dict) tutulur; kalıcılık Faz 4'te.
-> Bellek koruması için en fazla 20 veri seti saklanır (LRU).
+Hedef sütun analizi + problem tipi önerisi (öneri; UI rozette gerekçe gösterir).
+
+```json
+{
+  "column": "churn", "inferred_type": "numeric", "unique_count": 2,
+  "sample_values": ["0", "1"], "trainable": true,
+  "suggested_problem_type": "classification", "tone": "confident",
+  "reason": "Az sayıda tam sayı değeri (2 benzersiz) → sınıflandırma önerilir.",
+  "error": null
+}
+```
+Kural: kategorik/boolean → sınıflandırma; sayısal → regresyon, **ancak** tam sayı
+ve benzersiz ≤10 → sınıflandırma önerilir (`tone`: `confident`|`unsure`). Hedef
+tek-değerli veya (ID gibi) tümü benzersiz kategorik → `trainable:false`,
+`error.code = INVALID_TARGET`.
+
+### `POST /api/train`  →  **SSE** (`text/event-stream`)
+
+Body: `{ dataset_id, target_column, model_type, problem_type? }`.
+`model_type` ∈ `random_forest | gradient_boosting | linear`. `problem_type` verilirse
+öneriyi override eder (uyumsuzsa `INVALID_TARGET`, akış başlamadan). Split
+`test_size=0.2`, `random_state=42`, sınıflandırmada stratify; **metrikler test
+setinden**. Her olay:
+
+```
+data: {"stage":"validate","message":"Veri doğrulanıyor","progress":0.05}
+data: {"stage":"split","message":"...","progress":0.2,"n_train":64,"n_test":16}
+data: {"stage":"train","message":"...200 ağaç","progress":0.85,"trees_built":200,"trees_total":200}
+data: {"stage":"done","message":"Eğitim tamamlandı","progress":1.0,"model_id":"...","detail":{...ModelDetail}}
+```
+Aşamalar gerçek işe karşılık gelir (sahte log yok); ensemble'da `warm_start` ile
+gerçek ağaç ilerlemesi. Beklenmeyen hatada `{"stage":"error", ...}`.
+
+### `GET /api/models` · `GET /api/models/{id}` · `GET /api/models/{id}/importance?limit=`
+
+Model özet listesi / detay (metrikler, feature şeması, top-N importance) / importance
+("gerisi istek üzerine" — `limit` yoksa hepsi). Özette `source_dataset_available`
+kaynak veri setinin hâlâ bellekte olup olmadığını bildirir.
+
+**Metrikler:** sınıflandırma → accuracy, f1, precision, recall (weighted) + confusion
+matrix; regresyon → R², MAE, RMSE + residual noktaları.
+
+### `POST /api/predict`  (minimal — Faz 4'te UI/batch/güven detayı)
+
+Body: `{ model_id, features: { sütun: değer } }`. Saklı pipeline ile tahmin
+(self-contained → kaynak veri düşse de çalışır).
+
+```json
+{
+  "model_id": "...", "problem_type": "classification",
+  "prediction": "1", "probabilities": {"0": 0.12, "1": 0.88},
+  "confidence": 0.88, "warnings": []
+}
+```
+Regresyonda `prediction` sayı, `probabilities`/`confidence` null. Eğitimde
+görülmemiş kategori → `warnings` alanında açıkça bildirilir (sessiz bozulma yok).
+
+> Not: Veri setleri ve modeller MVP'de bellekte (dict, LRU ~20) tutulur; model
+> kayıtları self-contained (fit'li pipeline + feature şeması + tüm importance).
+> Kalıcılık Faz 4'te.
