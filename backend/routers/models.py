@@ -7,9 +7,10 @@
 
 from __future__ import annotations
 
-from fastapi import APIRouter, Query
+from fastapi import APIRouter, Form, Query, UploadFile
 
 from models.schemas import (
+    BatchPredictResponse,
     ErrorResponse,
     ImportanceList,
     ModelDetail,
@@ -17,8 +18,11 @@ from models.schemas import (
     PredictRequest,
     PredictResponse,
 )
+from routers.upload import read_limited
 from services import models_store
-from services.training import run_prediction
+from services.csv_loader import decode_bytes, parse_csv
+from services.errors import empty_file
+from services.training import run_batch_prediction, run_prediction
 
 router = APIRouter(tags=["models"])
 
@@ -59,3 +63,25 @@ def get_importance(
 def predict(req: PredictRequest) -> PredictResponse:
     record = models_store.get_model(req.model_id)
     return run_prediction(record, req.features)
+
+
+@router.post(
+    "/api/predict/batch",
+    response_model=BatchPredictResponse,
+    responses={
+        400: {"model": ErrorResponse},
+        404: {"model": ErrorResponse},
+        413: {"model": ErrorResponse},
+    },
+)
+async def predict_batch(
+    model_id: str = Form(...),
+    file: UploadFile = ...,
+) -> BatchPredictResponse:
+    record = models_store.get_model(model_id)
+    raw = await read_limited(file)
+    if not raw:
+        raise empty_file("Yüklenen dosya boş.")
+    text, _encoding = decode_bytes(raw)
+    df = parse_csv(text)
+    return run_batch_prediction(record, df)

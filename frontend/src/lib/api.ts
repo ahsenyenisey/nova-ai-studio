@@ -19,6 +19,7 @@ import type {
   TargetAnalysis,
   TrainEvent,
 } from "@/lib/train-types";
+import type { BatchPredictResponse } from "@/lib/predict-types";
 
 const BASE_URL =
   process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
@@ -198,4 +199,23 @@ export async function predict(
     body: JSON.stringify({ model_id: modelId, features }),
   });
   return parseOrThrow<PredictResponse>(res);
+}
+
+export async function predictBatch(
+  modelId: string,
+  file: File,
+): Promise<BatchPredictResponse> {
+  const form = new FormData();
+  form.append("model_id", modelId);
+  form.append("file", file);
+  let res: Response;
+  try {
+    res = await fetch(`${BASE_URL}/api/predict/batch`, {
+      method: "POST",
+      body: form,
+    });
+  } catch {
+    throw new ApiError("NETWORK", "Sunucuya ulaşılamadı.", 0);
+  }
+  return parseOrThrow<BatchPredictResponse>(res);
 }

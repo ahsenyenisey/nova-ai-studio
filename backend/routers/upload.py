@@ -14,7 +14,7 @@ router = APIRouter(prefix="/api", tags=["upload"])
 _CHUNK = 1024 * 1024  # 1MB
 
 
-async def _read_limited(file: UploadFile) -> bytes:
+async def read_limited(file: UploadFile) -> bytes:
     """Dosyayı parçalı okur; 20MB aşılırsa tamamını belleğe almadan reddeder."""
     buffer = bytearray()
     while True:
@@ -42,7 +42,7 @@ async def upload_csv(request: Request, file: UploadFile) -> UploadResponse:
         if int(content_length) > MAX_UPLOAD_BYTES + _CHUNK:
             raise file_too_large()
 
-    raw = await _read_limited(file)
+    raw = await read_limited(file)
     if not raw:
         raise empty_file("Yüklenen dosya boş.")
 

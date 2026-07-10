@@ -67,6 +67,15 @@ def model_not_found() -> ApiError:
     )
 
 
+def missing_features(columns: list[str]) -> ApiError:
+    return ApiError(
+        "MISSING_FEATURES",
+        "Yüklenen CSV'de modelin beklediği şu sütunlar eksik: "
+        + ", ".join(columns),
+        status_code=400,
+    )
+
+
 def model_dataset_evicted() -> ApiError:
     return ApiError(
         "MODEL_DATASET_EVICTED",

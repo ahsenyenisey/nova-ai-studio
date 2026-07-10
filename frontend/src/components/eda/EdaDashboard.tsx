@@ -1,7 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { AlertTriangle, ArrowLeft, Brain } from "lucide-react";
+import { ArrowLeft, Boxes, Brain } from "lucide-react";
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
@@ -12,15 +12,18 @@ import { DistributionCharts } from "@/components/eda/DistributionCharts";
 import { MissingMap } from "@/components/eda/MissingMap";
 import { StatusBar } from "@/components/studio/StatusBar";
 import { Button } from "@/components/ui/Button";
+import { ErrorState, toErrorInfo } from "@/components/ui/ErrorState";
 import { EdaSkeleton } from "@/components/ui/Skeleton";
-import { ApiError, fetchColumns, fetchEda } from "@/lib/api";
+import { fetchColumns, fetchEda } from "@/lib/api";
 import { EASE_CINEMATIC } from "@/lib/motion";
 import type { ChartData, EdaResponse } from "@/lib/eda-types";
 
 export function EdaDashboard({ datasetId }: { datasetId: string }) {
   const [eda, setEda] = useState<EdaResponse | null>(null);
   const [charts, setCharts] = useState<ChartData | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<{ message: string; code?: string } | null>(
+    null,
+  );
   const [chartsLoading, setChartsLoading] = useState(false);
 
   useEffect(() => {
@@ -33,9 +36,7 @@ export function EdaDashboard({ datasetId }: { datasetId: string }) {
       })
       .catch((err: unknown) => {
         if (!active) return;
-        setError(
-          err instanceof ApiError ? err.message : "EDA yüklenemedi.",
-        );
+        setError(toErrorInfo(err));
       });
     return () => {
       active = false;
@@ -57,11 +58,7 @@ export function EdaDashboard({ datasetId }: { datasetId: string }) {
       setChartsLoading(true);
       fetchColumns(datasetId, cols)
         .then((res) => setCharts(res))
-        .catch((err: unknown) =>
-          setError(
-            err instanceof ApiError ? err.message : "Grafikler güncellenemedi.",
-          ),
-        )
+        .catch((err: unknown) => setError(toErrorInfo(err)))
         .finally(() => setChartsLoading(false));
     },
     [datasetId],
@@ -69,12 +66,16 @@ export function EdaDashboard({ datasetId }: { datasetId: string }) {
 
   if (error) {
     return (
-      <div className="mx-auto flex min-h-screen max-w-md flex-col items-center justify-center gap-6 px-6 text-center">
-        <AlertTriangle className="h-10 w-10 text-danger" aria-hidden />
-        <p className="text-text-primary">{error}</p>
-        <Link href="/studio">
-          <Button icon={ArrowLeft}>Yeni veri yükle</Button>
-        </Link>
+      <div className="mx-auto max-w-md px-6 py-20">
+        <ErrorState
+          message={error.message}
+          code={error.code}
+          action={
+            <Link href="/studio">
+              <Button icon={ArrowLeft}>Yeni veri yükle</Button>
+            </Link>
+          }
+        />
       </div>
     );
   }
@@ -110,6 +111,11 @@ export function EdaDashboard({ datasetId }: { datasetId: string }) {
             loading={chartsLoading}
             onApply={applyColumns}
           />
+          <Link href="/studio/models">
+            <Button variant="ghost" icon={Boxes} className="!px-4 !py-2 text-sm">
+              Modeller
+            </Button>
+          </Link>
           <Link href={`/studio/train/${datasetId}`}>
             <Button icon={Brain} className="!px-4 !py-2 text-sm">
               Model Eğit

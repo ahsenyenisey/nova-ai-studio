@@ -1,7 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { AlertTriangle, ArrowLeft } from "lucide-react";
+import { ArrowLeft, Boxes, Sparkles } from "lucide-react";
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 
@@ -11,8 +11,9 @@ import { TargetModelSelector } from "@/components/train/TargetModelSelector";
 import { TrainingConsole } from "@/components/train/TrainingConsole";
 import { StatusBar } from "@/components/studio/StatusBar";
 import { Button } from "@/components/ui/Button";
+import { ErrorState, toErrorInfo } from "@/components/ui/ErrorState";
 import { EdaSkeleton } from "@/components/ui/Skeleton";
-import { ApiError, fetchEda, trainStream } from "@/lib/api";
+import { fetchEda, trainStream } from "@/lib/api";
 import type { EdaResponse } from "@/lib/eda-types";
 import { EASE_CINEMATIC } from "@/lib/motion";
 import type {
@@ -24,22 +25,22 @@ import type {
 
 export function TrainDashboard({ datasetId }: { datasetId: string }) {
   const [eda, setEda] = useState<EdaResponse | null>(null);
-  const [loadError, setLoadError] = useState<string | null>(null);
+  const [loadError, setLoadError] = useState<
+    { message: string; code?: string } | null
+  >(null);
 
   const [events, setEvents] = useState<TrainEvent[]>([]);
   const [running, setRunning] = useState(false);
-  const [trainError, setTrainError] = useState<string | null>(null);
+  const [trainError, setTrainError] = useState<
+    { message: string; code?: string } | null
+  >(null);
   const [result, setResult] = useState<ModelDetail | null>(null);
 
   useEffect(() => {
     let active = true;
     fetchEda(datasetId)
       .then((res) => active && setEda(res))
-      .catch(
-        (e: unknown) =>
-          active &&
-          setLoadError(e instanceof ApiError ? e.message : "Veri yüklenemedi."),
-      );
+      .catch((e: unknown) => active && setLoadError(toErrorInfo(e)));
     return () => {
       active = false;
     };
@@ -57,11 +58,11 @@ export function TrainDashboard({ datasetId }: { datasetId: string }) {
           (event) => {
             setEvents((prev) => [...prev, event]);
             if (event.stage === "done" && event.detail) setResult(event.detail);
-            if (event.stage === "error") setTrainError(event.message);
+            if (event.stage === "error") setTrainError({ message: event.message });
           },
         );
       } catch (e) {
-        setTrainError(e instanceof ApiError ? e.message : "Eğitim başarısız.");
+        setTrainError(toErrorInfo(e));
       } finally {
         setRunning(false);
       }
@@ -71,12 +72,16 @@ export function TrainDashboard({ datasetId }: { datasetId: string }) {
 
   if (loadError) {
     return (
-      <div className="mx-auto flex min-h-screen max-w-md flex-col items-center justify-center gap-6 px-6 text-center">
-        <AlertTriangle className="h-10 w-10 text-danger" aria-hidden />
-        <p className="text-text-primary">{loadError}</p>
-        <Link href="/studio">
-          <Button icon={ArrowLeft}>Yeni veri yükle</Button>
-        </Link>
+      <div className="mx-auto max-w-md px-6 py-20">
+        <ErrorState
+          message={loadError.message}
+          code={loadError.code}
+          action={
+            <Link href="/studio">
+              <Button icon={ArrowLeft}>Yeni veri yükle</Button>
+            </Link>
+          }
+        />
       </div>
     );
   }
@@ -107,11 +112,18 @@ export function TrainDashboard({ datasetId }: { datasetId: string }) {
         className="mt-8 flex items-center justify-between"
       >
         <h1 className="text-2xl font-bold">Model Eğitimi</h1>
-        <Link href={`/studio/eda/${datasetId}`}>
-          <Button variant="ghost" icon={ArrowLeft} className="!px-4 !py-2 text-sm">
-            EDA&apos;ya dön
-          </Button>
-        </Link>
+        <div className="flex items-center gap-2">
+          <Link href="/studio/models">
+            <Button variant="ghost" icon={Boxes} className="!px-4 !py-2 text-sm">
+              Modeller
+            </Button>
+          </Link>
+          <Link href={`/studio/eda/${datasetId}`}>
+            <Button variant="ghost" icon={ArrowLeft} className="!px-4 !py-2 text-sm">
+              EDA&apos;ya dön
+            </Button>
+          </Link>
+        </div>
       </motion.div>
 
       <div className="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-2">
@@ -125,20 +137,31 @@ export function TrainDashboard({ datasetId }: { datasetId: string }) {
       </div>
 
       {trainError ? (
-        <div className="mt-6 flex items-center gap-2 rounded-xl border border-danger/30 bg-danger/10 px-4 py-3 text-sm text-danger">
-          <AlertTriangle className="h-4 w-4 shrink-0" aria-hidden />
-          {trainError}
+        <div className="mt-6">
+          <ErrorState message={trainError.message} code={trainError.code} />
         </div>
       ) : null}
 
       {result ? (
-        <div className="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-2">
-          <MetricsPanel detail={result} />
-          <FeatureImportance
-            modelId={result.model_id}
-            initial={result.importance}
-          />
-        </div>
+        <>
+          <div className="mt-6 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-primary/30 bg-primary/10 px-5 py-4">
+            <p className="text-sm text-text-primary">
+              Model hazır — bu modelle tahmin yapabilirsin.
+            </p>
+            <Link href={`/studio/predict/${result.model_id}`}>
+              <Button icon={Sparkles} className="!px-4 !py-2 text-sm">
+                Bu modelle tahmin yap
+              </Button>
+            </Link>
+          </div>
+          <div className="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-2">
+            <MetricsPanel detail={result} />
+            <FeatureImportance
+              modelId={result.model_id}
+              initial={result.importance}
+            />
+          </div>
+        </>
       ) : null}
     </div>
   );

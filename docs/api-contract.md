@@ -10,7 +10,8 @@ Tüm hatalar şu formatta döner:
 
 **Hata kodları:** `FILE_TOO_LARGE` (413), `EMPTY_FILE` (400),
 `INVALID_ENCODING` (400), `INVALID_CSV` (400), `DATASET_NOT_FOUND` (404),
-`INVALID_TARGET` (400), `MODEL_NOT_FOUND` (404), `MODEL_DATASET_EVICTED` (409).
+`INVALID_TARGET` (400), `MODEL_NOT_FOUND` (404), `MODEL_DATASET_EVICTED` (409),
+`MISSING_FEATURES` (400).
 
 ---
 
@@ -178,6 +179,26 @@ Body: `{ model_id, features: { sütun: değer } }`. Saklı pipeline ile tahmin
 ```
 Regresyonda `prediction` sayı, `probabilities`/`confidence` null. Eğitimde
 görülmemiş kategori → `warnings` alanında açıkça bildirilir (sessiz bozulma yok).
+
+### `POST /api/predict/batch`  (toplu CSV tahmini — Faz 4)
+
+`multipart/form-data`: `model_id` (form alanı) + `file` (CSV). 20MB limiti ve
+encoding zinciri `/api/upload` ile aynı. Modelin beklediği bir feature sütunu
+eksikse → `MISSING_FEATURES` (eksik sütunlar listelenir).
+
+```json
+{
+  "model_id": "...", "problem_type": "classification",
+  "prediction_column": "tahmin",
+  "columns": ["id", "age", "city", "plan", "tahmin", "güven"],
+  "rows": [ { "id": 1, "age": 60, "city": "Ist", "plan": "C",
+             "tahmin": "1", "güven": 0.99 } ],
+  "n_rows": 1, "warnings": []
+}
+```
+`rows` yüklenen CSV'nin **tüm** orijinal sütunlarını korur (id gibi) + `tahmin`
+(sınıflandırmada ayrıca `güven`) sütunu. Bilinmeyen kategoriler `warnings`'te
+sütun bazında toplanır. Sonuç JSON'dur; CSV indirme istemci tarafında üretilir.
 
 > Not: Veri setleri ve modeller MVP'de bellekte (dict, LRU ~20) tutulur; model
 > kayıtları self-contained (fit'li pipeline + feature şeması + tüm importance).

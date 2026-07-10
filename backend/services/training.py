@@ -31,6 +31,7 @@ from sklearn.model_selection import train_test_split
 from sklearn.pipeline import Pipeline
 
 from models.schemas import (
+    BatchPredictResponse,
     ClassificationMetrics,
     ConfusionMatrix,
     FeatureImportanceItem,
@@ -39,6 +40,7 @@ from models.schemas import (
     RegressionMetrics,
     ResidualPoint,
 )
+from services.errors import missing_features
 from services import models_store
 from services.preprocessing import (
     build_feature_schema,
@@ -307,5 +309,81 @@ def run_prediction(record: Any, features: dict[str, Any]) -> PredictResponse:
         prediction=float(pred),
         probabilities=None,
         confidence=None,
+        warnings=warnings,
+    )
+
+
+PREDICTION_COL = "tahmin"
+CONFIDENCE_COL = "güven"
+_UNKNOWN_SHOWN = 5
+
+
+def _jsonify(value: Any) -> str | float | None:
+    if value is None or (not isinstance(value, str) and pd.isna(value)):
+        return None
+    if isinstance(value, (int, float, np.integer, np.floating)):
+        return float(value)
+    return str(value)
+
+
+def run_batch_prediction(record: Any, df: pd.DataFrame) -> BatchPredictResponse:
+    """Yüklenen CSV için toplu tahmin. Eksik feature sütunu → MISSING_FEATURES."""
+    feature_cols = [f.name for f in record.feature_schema]
+    missing = [c for c in feature_cols if c not in df.columns]
+    if missing:
+        raise missing_features(missing)
+
+    warnings: list[str] = []
+    x = pd.DataFrame(index=df.index)
+    for f in record.feature_schema:
+        col = df[f.name]
+        if f.type == "numeric":
+            x[f.name] = pd.to_numeric(col, errors="coerce")
+        else:
+            x[f.name] = col  # object/NaN olduğu gibi (eğitimdeki hizayla aynı)
+            if f.categories is not None:
+                known = set(f.categories)
+                unknown = sorted(
+                    {str(v) for v in col.dropna().unique() if str(v) not in known}
+                )
+                if unknown:
+                    shown = ", ".join(unknown[:_UNKNOWN_SHOWN])
+                    extra = "…" if len(unknown) > _UNKNOWN_SHOWN else ""
+                    warnings.append(
+                        f"'{f.name}' için eğitimde görülmemiş değer(ler): {shown}{extra}"
+                    )
+
+    pipeline: Pipeline = record.pipeline
+    preds = pipeline.predict(x[feature_cols])
+
+    is_classification = record.problem_type == "classification"
+    confidences: list[float] | None = None
+    estimator = pipeline.named_steps["est"]
+    if is_classification and hasattr(estimator, "predict_proba"):
+        proba = pipeline.predict_proba(x[feature_cols])
+        confidences = [float(p.max()) for p in proba]
+
+    columns = list(df.columns) + [PREDICTION_COL]
+    if confidences is not None:
+        columns.append(CONFIDENCE_COL)
+
+    base_records = df.to_dict(orient="records")
+    rows: list[dict[str, str | float | None]] = []
+    for i, base in enumerate(base_records):
+        row: dict[str, str | float | None] = {
+            str(k): _jsonify(v) for k, v in base.items()
+        }
+        row[PREDICTION_COL] = str(preds[i]) if is_classification else float(preds[i])
+        if confidences is not None:
+            row[CONFIDENCE_COL] = round(confidences[i], 4)
+        rows.append(row)
+
+    return BatchPredictResponse(
+        model_id=record.model_id,
+        problem_type=record.problem_type,
+        prediction_column=PREDICTION_COL,
+        columns=columns,
+        rows=rows,
+        n_rows=len(rows),
         warnings=warnings,
     )

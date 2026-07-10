@@ -227,3 +227,15 @@ class PredictResponse(BaseModel):
     probabilities: dict[str, float] | None = None
     confidence: float | None = None
     warnings: list[str] = []
+
+
+class BatchPredictResponse(BaseModel):
+    model_id: str
+    problem_type: ProblemType
+    # Eklenen tahmin sütununun adı (ör. "tahmin").
+    prediction_column: str
+    # Tablo/CSV başlık sırası: orijinal sütunlar + tahmin (+ sınıflandırmada güven).
+    columns: list[str]
+    rows: list[dict[str, str | float | None]]
+    n_rows: int
+    warnings: list[str] = []
