@@ -1,4 +1,4 @@
-# NOVA — AI Destekli Veri Analiz Stüdyosu
+<img width="1710" height="950" alt="Screenshot 2026-07-11 at 13 08 35" src="https://github.com/user-attachments/assets/2854b3ea-9e3a-478e-9135-e5402057b634" /># NOVA — AI Destekli Veri Analiz Stüdyosu
 
 CSV verisi yükleyip otomatik keşifsel veri analizi (EDA), makine öğrenmesi model
 eğitimi ve tahmin yapabildiğin, **sinematik ve premium** hissiyatlı bir web
@@ -12,7 +12,7 @@ API sözleşmesi: [`docs/api-contract.md`](./docs/api-contract.md).
 
 | Sinematik giriş | Otomatik EDA |
 |---|---|
-| ![Landing](./docs/screenshots/landing.png) | ![EDA](./docs/screenshots/eda.png) |
+| <img width="1707" height="947" alt="Screenshot 2026-07-11 at 13 08 58" src="https://github.com/user-attachments/assets/9f8f803b-c1f0-47dc-b243-a4cbaa0ee24e" /> | ![EDA](./docs/screenshots/eda.png) |
 
 | Model eğitimi (gerçek adımlı SSE) | Tahmin (dramatik reveal) |
 |---|---|
