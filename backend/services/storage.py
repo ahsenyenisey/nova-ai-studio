@@ -18,7 +18,8 @@ from services import eda as eda_service
 from services.csv_loader import build_preview, describe_columns
 from services.errors import dataset_not_found
 
-MAX_DATASETS = 20
+# Ücretsiz host'ta (512MB) bellek birikmesin diye düşük tutulur.
+MAX_DATASETS = 3
 
 
 @dataclass

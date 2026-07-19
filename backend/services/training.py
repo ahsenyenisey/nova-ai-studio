@@ -31,7 +31,8 @@ from services.preprocessing import (
 
 RANDOM_STATE = 42
 TEST_SIZE = 0.2
-N_ESTIMATORS = 200
+# Ücretsiz host (512MB RAM) için hafif tutulur; n_jobs=1 → paralel işçi kopyası yok.
+N_ESTIMATORS = 100
 PROGRESS_STEPS = 10
 
 
@@ -39,7 +40,7 @@ def build_estimator(model_type: str, problem_type: str) -> Any:
     classification = problem_type == "classification"
     if model_type == "random_forest":
         cls = RandomForestClassifier if classification else RandomForestRegressor
-        return cls(n_estimators=N_ESTIMATORS, random_state=RANDOM_STATE, n_jobs=-1)
+        return cls(n_estimators=N_ESTIMATORS, random_state=RANDOM_STATE, n_jobs=1)
     if model_type == "gradient_boosting":
         cls = (
             GradientBoostingClassifier if classification else GradientBoostingRegressor

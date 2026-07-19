@@ -40,7 +40,7 @@ from services.preprocessing import encoded_to_source
 
 MAX_RESIDUALS = 500
 ROC_POINTS = 50
-PERMUTATION_REPEATS = 5
+PERMUTATION_REPEATS = 3
 CV_FOLDS = 5
 RANDOM_STATE = 42
 
@@ -87,7 +87,7 @@ def permutation_importances(
         y_test,
         n_repeats=PERMUTATION_REPEATS,
         random_state=RANDOM_STATE,
-        n_jobs=-1,
+        n_jobs=1,
     )
     return aggregate_importances(preprocessor, result.importances_mean, feature_cols)
 

@@ -28,7 +28,8 @@ from services import storage
 from services.errors import model_not_found
 from services.ranking import select_top
 
-MAX_MODELS = 20
+# Ücretsiz host'ta (512MB) bellek birikmesin diye düşük tutulur.
+MAX_MODELS = 3
 DEFAULT_IMPORTANCE_TOP = 15
 
 

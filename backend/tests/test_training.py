@@ -79,4 +79,6 @@ def test_train_progress_has_real_stages():
         assert s in stages
     # ensemble gerçek ağaç ilerlemesi
     tree_events = [e for e in events if e.get("trees_built")]
-    assert tree_events and tree_events[-1]["trees_built"] == 200
+    assert tree_events
+    # Son olayda inşa edilen ağaç sayısı, hedeflenen toplama ulaşır.
+    assert tree_events[-1]["trees_built"] == tree_events[-1]["trees_total"]
