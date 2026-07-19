@@ -1,5 +1,5 @@
-# NOVA API — Hugging Face Spaces (Docker SDK) için imaj.
-# HF Spaces uygulamayı README frontmatter'daki app_port (7860) üzerinden dinler.
+# NOVA API — backend imajı (Render/Docker uyumlu).
+# $PORT verilirse onu, yoksa 7860'ı dinler (host'a göre otomatik).
 FROM python:3.14-slim
 
 WORKDIR /app
@@ -12,4 +12,4 @@ COPY . .
 
 EXPOSE 7860
 
-CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "7860"]
+CMD ["sh", "-c", "uvicorn main:app --host 0.0.0.0 --port ${PORT:-7860}"]

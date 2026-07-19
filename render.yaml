@@ -1,0 +1,11 @@
+# Render Blueprint — NOVA backend (ücretsiz web servisi, Docker).
+# Render Dashboard → New → Blueprint → bu repo → otomatik okur.
+services:
+  - type: web
+    name: nova-api
+    runtime: docker
+    rootDir: backend
+    dockerfilePath: ./Dockerfile
+    plan: free
+    healthCheckPath: /api/health
+    autoDeploy: true
