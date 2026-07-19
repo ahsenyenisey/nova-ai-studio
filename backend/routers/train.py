@@ -60,7 +60,7 @@ def train(req: TrainRequest) -> StreamingResponse:
 
     def sse() -> Iterator[bytes]:
         for event in train_stream(
-            record, req.target_column, req.model_type, problem_type
+            record, req.target_column, req.model_type, problem_type, req.tune
         ):
             yield f"data: {json.dumps(event, ensure_ascii=False)}\n\n".encode("utf-8")
 

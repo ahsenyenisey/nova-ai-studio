@@ -18,6 +18,10 @@ API sözleşmesi: [`docs/api-contract.md`](./docs/api-contract.md).
 |---|---|
 | ![Eğitim](./docs/screenshots/train.png) | ![Tahmin](./docs/screenshots/predict.png) |
 
+| Metrikler + ROC/AUC | Model listesi (sol nav rayı) |
+|---|---|
+| ![Metrikler](./docs/screenshots/metrics.png) | ![Modeller](./docs/screenshots/models.png) |
+
 > Görseller `docs/screenshots/` altında (nasıl yenilendiği:
 > [`docs/screenshots/README.md`](./docs/screenshots/README.md)).
 
@@ -86,3 +90,4 @@ cd frontend && npm run lint && npx tsc --noEmit && npm run build
 - **Faz 2 — Veri Yükleme + EDA** ✅ Upload (encoding zinciri + doğrulama), drag & drop, animasyonlu EDA dashboard (sütun tipleri, eksik harita, korelasyon ısı haritası, dağılımlar, sütun seçici).
 - **Faz 3 — Model Eğitimi (+ minimal tahmin)** ✅ SSE ile gerçek adımlı eğitim, problem tipi önerisi + override, test-seti metrikleri (confusion/residual), feature importance; eğitim/tahmin ortak sklearn Pipeline.
 - **Faz 4 — Tahmin + Cila** ✅ Tekil tahmin formu (şemadan otomatik) + dramatik reveal, toplu CSV tahmini (tablo + indirme), model listesi (`source_dataset_available` rozeti), ortak empty/error state'ler, `prefers-reduced-motion` (MotionConfig), responsive.
+- **Faz 5 — ML derinliği + sinematik UX** ✅ Cross-validation, ROC/AUC eğrisi, hiperparametre ayarı (GridSearchCV), permutation importance, regresyon güven aralığı; sol sinematik nav rayı, tahmin geçmişi, "örnek satırla doldur", model silme + karşılaştırma.

@@ -15,6 +15,7 @@ from sklearn.pipeline import Pipeline
 
 from models.schemas import (
     ClassificationMetrics,
+    CvScore,
     FeatureImportanceItem,
     FeatureSchemaItem,
     ImportanceList,
@@ -42,7 +43,7 @@ class ModelRecord:
     created_at: str
     pipeline: Pipeline
     feature_schema: list[FeatureSchemaItem]
-    importances: list[FeatureImportanceItem]  # tümü, azalan sırada
+    importances: list[FeatureImportanceItem]  # model-tabanlı, azalan sırada
     n_train: int
     n_test: int
     primary_metric_name: str
@@ -50,6 +51,10 @@ class ModelRecord:
     classification: ClassificationMetrics | None = None
     regression: RegressionMetrics | None = None
     class_labels: list[str] | None = field(default=None)
+    permutation_importances: list[FeatureImportanceItem] = field(default_factory=list)
+    cv: CvScore | None = None
+    best_params: dict[str, str] | None = None
+    residual_std: float | None = None
 
 
 _MODELS: "OrderedDict[str, ModelRecord]" = OrderedDict()
@@ -79,16 +84,16 @@ def list_models() -> list[ModelSummary]:
 
 
 def _importance_list(
-    record: ModelRecord, limit: int
+    items: list[FeatureImportanceItem], limit: int
 ) -> ImportanceList:
     """Ortak `select_top` ile top-N + gizli sayısı ("gerisi istek üzerine")."""
-    names = [it.name for it in record.importances]
-    scores = [it.importance for it in record.importances]
+    names = [it.name for it in items]
+    scores = [it.importance for it in items]
     selected, hidden = select_top(names, scores, limit)
-    by_name = {it.name: it for it in record.importances}
+    by_name = {it.name: it for it in items}
     return ImportanceList(
         items=[by_name[n] for n in selected],
-        total=len(record.importances),
+        total=len(items),
         hidden_count=hidden,
     )
 
@@ -106,6 +111,7 @@ def build_summary(record: ModelRecord) -> ModelSummary:
         source_dataset_available=storage.has_dataset(record.dataset_id),
         primary_metric_name=record.primary_metric_name,
         primary_metric_value=record.primary_metric_value,
+        cv=record.cv,
     )
 
 
@@ -118,12 +124,27 @@ def build_detail(
         feature_schema=record.feature_schema,
         classification=record.classification,
         regression=record.regression,
-        importance=_importance_list(record, importance_limit),
+        importance=_importance_list(record.importances, importance_limit),
+        best_params=record.best_params,
+        has_permutation=bool(record.permutation_importances),
     )
 
 
-def build_importance(record: ModelRecord, limit: int | None) -> ImportanceList:
-    return _importance_list(record, limit if limit is not None else len(record.importances))
+def build_importance(
+    record: ModelRecord, limit: int | None, method: str = "model"
+) -> ImportanceList:
+    items = (
+        record.permutation_importances
+        if method == "permutation" and record.permutation_importances
+        else record.importances
+    )
+    return _importance_list(items, limit if limit is not None else len(items))
+
+
+def delete_model(model_id: str) -> None:
+    if model_id not in _MODELS:
+        raise model_not_found()
+    del _MODELS[model_id]
 
 
 def clear() -> None:

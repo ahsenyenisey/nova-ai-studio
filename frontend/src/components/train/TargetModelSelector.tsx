@@ -1,7 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { HelpCircle, Lightbulb, Play } from "lucide-react";
+import { Check, HelpCircle, Lightbulb, Play } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 
 import { Button } from "@/components/ui/Button";
@@ -22,6 +22,7 @@ interface Props {
     target: string,
     modelType: ModelType,
     problemType: ProblemType,
+    tune: boolean,
   ) => void;
 }
 
@@ -38,6 +39,7 @@ export function TargetModelSelector({
   const [analysisError, setAnalysisError] = useState<string | null>(null);
   const [override, setOverride] = useState<ProblemType | null>(null);
   const [modelType, setModelType] = useState<ModelType>("random_forest");
+  const [tune, setTune] = useState(false);
 
   useEffect(() => {
     if (!target) return;
@@ -69,8 +71,8 @@ export function TargetModelSelector({
   const numericTarget = analysis?.inferred_type === "numeric";
 
   const handleTrain = useCallback(() => {
-    if (target && effectiveType) onTrain(target, modelType, effectiveType);
-  }, [target, effectiveType, modelType, onTrain]);
+    if (target && effectiveType) onTrain(target, modelType, effectiveType, tune);
+  }, [target, effectiveType, modelType, tune, onTrain]);
 
   return (
     <Panel className="p-6">
@@ -169,6 +171,29 @@ export function TargetModelSelector({
               ))}
             </div>
           </div>
+
+          {/* Hiperparametre ayarı */}
+          <button
+            type="button"
+            onClick={() => setTune((t) => !t)}
+            disabled={disabled}
+            className="flex w-full items-center gap-3 rounded-xl border border-border-glow bg-surface-glass px-4 py-3 text-left text-sm disabled:opacity-50"
+          >
+            <span
+              className={
+                "flex h-4 w-4 shrink-0 items-center justify-center rounded border " +
+                (tune ? "border-primary bg-primary text-white" : "border-border-glow")
+              }
+            >
+              {tune ? <Check className="h-3 w-3" aria-hidden /> : null}
+            </span>
+            <span>
+              <span className="text-text-primary">Hiperparametre ayarı</span>
+              <span className="ml-2 text-xs text-text-muted">
+                küçük grid ile en iyi ayarı ara (biraz yavaşlatır)
+              </span>
+            </span>
+          </button>
 
           <Button
             icon={Play}

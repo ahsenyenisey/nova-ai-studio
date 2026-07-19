@@ -202,4 +202,27 @@ sütun bazında toplanır. Sonuç JSON'dur; CSV indirme istemci tarafında üret
 
 > Not: Veri setleri ve modeller MVP'de bellekte (dict, LRU ~20) tutulur; model
 > kayıtları self-contained (fit'li pipeline + feature şeması + tüm importance).
-> Kalıcılık Faz 4'te.
+> Kalıcılık ileride.
+
+---
+
+## Faz 5 — ML derinliği + ek uçlar
+
+**`POST /api/train`** artık `tune: bool` (varsayılan false) kabul eder → küçük bir
+grid ile `GridSearchCV`. Yeni SSE aşamaları **`cv`** (çapraz doğrulama) ve **`tune`**.
+`ModelDetail`/`ModelSummary` genişledi:
+- `cv`: `{ mean, std, folds, metric }` — k-fold çapraz doğrulama skoru.
+- `best_params`: ayar açıksa en iyi hiperparametreler (yoksa null).
+- `has_permutation`: permutation importance mevcut mu.
+- `classification.auc`, `classification.roc` (`{ points:[{fpr,tpr}], auc, positive_label }`;
+  ikili sınıfta eğri, çok sınıflıda yalnızca AUC).
+- `regression.residual_std` → tahminde güven aralığı.
+
+**`POST /api/predict`** regresyonda `interval: { low, high }` (~%95, residual std'den)
+döndürür. `POST /api/predict/batch` regresyonda `alt`/`üst` sütunları ekler.
+
+| Endpoint | İş |
+|----------|----|
+| `GET /api/models/{id}/importance?method=model\|permutation` | Model-tabanlı veya permutation importance (top-N + `limit`). |
+| `GET /api/models/{id}/sample-row` | Kaynak veriden rastgele bir satırın feature değerleri (`{ values }`). Veri düşmüşse **`MODEL_DATASET_EVICTED`** (409). |
+| `DELETE /api/models/{id}` | Modeli sil (`204`; yoksa `MODEL_NOT_FOUND`). |

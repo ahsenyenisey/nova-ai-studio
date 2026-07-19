@@ -1,7 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { Boxes, FileSpreadsheet, User } from "lucide-react";
+import { Boxes, FileSpreadsheet, History, User } from "lucide-react";
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 
@@ -31,6 +31,7 @@ export function PredictDashboard({ modelId }: { modelId: string }) {
   const [predictError, setPredictError] = useState<
     { message: string; code?: string } | null
   >(null);
+  const [history, setHistory] = useState<PredictResponse[]>([]);
 
   useEffect(() => {
     let active = true;
@@ -47,7 +48,9 @@ export function PredictDashboard({ modelId }: { modelId: string }) {
       setPredictError(null);
       setPredicting(true);
       try {
-        setResult(await predict(modelId, features));
+        const res = await predict(modelId, features);
+        setResult(res);
+        setHistory((h) => [res, ...h].slice(0, 8));
       } catch (e) {
         setPredictError(toErrorInfo(e));
       } finally {
@@ -130,8 +133,10 @@ export function PredictDashboard({ modelId }: { modelId: string }) {
               <EmptyState icon={User} title="Bu modelde girdi özelliği yok" />
             ) : (
               <SinglePredictForm
+                modelId={modelId}
                 schema={model.feature_schema}
                 loading={predicting}
+                sourceAvailable={model.source_dataset_available}
                 onSubmit={onSubmit}
               />
             )}
@@ -158,6 +163,38 @@ export function PredictDashboard({ modelId }: { modelId: string }) {
       ) : (
         <BatchPredict modelId={modelId} />
       )}
+
+      {tab === "single" && history.length > 0 ? (
+        <Panel className="mt-6 p-6">
+          <h3 className="mb-3 flex items-center gap-2 text-sm font-medium text-text-muted">
+            <History className="h-4 w-4" aria-hidden />
+            Tahmin geçmişi (bu oturum)
+          </h3>
+          <div className="flex flex-wrap gap-2">
+            {history.map((h, i) => (
+              <button
+                key={i}
+                type="button"
+                onClick={() => setResult(h)}
+                className="flex items-center gap-2 rounded-lg border border-border-glow bg-surface-glass px-3 py-1.5 text-sm hover:border-primary/40"
+              >
+                <span className="font-metric text-text-primary">
+                  {typeof h.prediction === "number"
+                    ? h.prediction.toLocaleString("tr-TR", {
+                        maximumFractionDigits: 2,
+                      })
+                    : h.prediction}
+                </span>
+                {h.confidence !== null ? (
+                  <span className="font-metric text-xs text-accent-cyan">
+                    %{(h.confidence * 100).toFixed(0)}
+                  </span>
+                ) : null}
+              </button>
+            ))}
+          </div>
+        </Panel>
+      ) : null}
     </div>
   );
 }

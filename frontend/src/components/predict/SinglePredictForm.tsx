@@ -1,25 +1,56 @@
 "use client";
 
-import { Sparkles } from "lucide-react";
+import { Shuffle, Sparkles } from "lucide-react";
 import { useCallback, useState } from "react";
 
 import { Button } from "@/components/ui/Button";
+import { ApiError, fetchSampleRow } from "@/lib/api";
 import type { FeatureSchemaItem } from "@/lib/train-types";
 
 type FeatureValue = string | number | null;
 
 interface Props {
+  modelId: string;
   schema: FeatureSchemaItem[];
   loading: boolean;
+  sourceAvailable: boolean;
   onSubmit: (features: Record<string, FeatureValue>) => void;
 }
 
 /** Model feature şemasından OTOMATİK üretilen tekil tahmin formu. */
-export function SinglePredictForm({ schema, loading, onSubmit }: Props) {
+export function SinglePredictForm({
+  modelId,
+  schema,
+  loading,
+  sourceAvailable,
+  onSubmit,
+}: Props) {
   const [values, setValues] = useState<Record<string, string>>({});
+  const [sampleError, setSampleError] = useState<string | null>(null);
+  const [filling, setFilling] = useState(false);
 
   const setValue = (name: string, value: string) =>
     setValues((v) => ({ ...v, [name]: value }));
+
+  const fillSample = async () => {
+    setSampleError(null);
+    setFilling(true);
+    try {
+      const { values: sample } = await fetchSampleRow(modelId);
+      const next: Record<string, string> = {};
+      for (const f of schema) {
+        const v = sample[f.name];
+        next[f.name] = v === null || v === undefined ? "" : String(v);
+      }
+      setValues(next);
+    } catch (e) {
+      setSampleError(
+        e instanceof ApiError ? e.message : "Örnek satır alınamadı.",
+      );
+    } finally {
+      setFilling(false);
+    }
+  };
 
   const submit = useCallback(
     (e: React.FormEvent) => {
@@ -43,6 +74,27 @@ export function SinglePredictForm({ schema, loading, onSubmit }: Props) {
 
   return (
     <form onSubmit={submit} className="space-y-5">
+      <div className="flex items-center justify-end">
+        <button
+          type="button"
+          onClick={fillSample}
+          disabled={!sourceAvailable || filling || loading}
+          title={
+            sourceAvailable
+              ? "Kaynak veriden rastgele bir satırla doldur"
+              : "Kaynak veri seti bellekten düştü"
+          }
+          className="flex items-center gap-1.5 rounded-lg border border-border-glow bg-surface-glass px-3 py-1.5 text-xs text-text-muted transition-colors hover:text-text-primary disabled:cursor-not-allowed disabled:opacity-40"
+        >
+          <Shuffle className="h-3.5 w-3.5" aria-hidden />
+          {filling ? "Dolduruluyor…" : "Örnek satırla doldur"}
+        </button>
+      </div>
+
+      {sampleError ? (
+        <p className="text-sm text-danger">{sampleError}</p>
+      ) : null}
+
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         {schema.map((f) => (
           <div key={f.name}>

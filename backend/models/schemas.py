@@ -148,6 +148,8 @@ class TrainRequest(BaseModel):
     model_type: ModelType = "random_forest"
     # None → otomatik öneri kullanılır; aksi halde override.
     problem_type: ProblemType | None = None
+    # True → küçük bir grid ile hiperparametre ayarı (GridSearchCV).
+    tune: bool = False
 
 
 class FeatureSchemaItem(BaseModel):
@@ -161,6 +163,24 @@ class ConfusionMatrix(BaseModel):
     matrix: list[list[int]]
 
 
+class RocPoint(BaseModel):
+    fpr: float
+    tpr: float
+
+
+class RocCurve(BaseModel):
+    points: list[RocPoint]
+    auc: float
+    positive_label: str
+
+
+class CvScore(BaseModel):
+    mean: float
+    std: float
+    folds: int
+    metric: str  # "accuracy" | "r2"
+
+
 class ClassificationMetrics(BaseModel):
     accuracy: float
     f1: float
@@ -168,6 +188,8 @@ class ClassificationMetrics(BaseModel):
     recall: float
     class_labels: list[str]
     confusion_matrix: ConfusionMatrix
+    auc: float | None = None
+    roc: RocCurve | None = None
 
 
 class ResidualPoint(BaseModel):
@@ -180,6 +202,8 @@ class RegressionMetrics(BaseModel):
     mae: float
     rmse: float
     residuals: list[ResidualPoint]
+    # Test residual std → tahmin güven aralığı için.
+    residual_std: float = 0.0
 
 
 class FeatureImportanceItem(BaseModel):
@@ -205,6 +229,7 @@ class ModelSummary(BaseModel):
     source_dataset_available: bool
     primary_metric_name: str
     primary_metric_value: float
+    cv: CvScore | None = None
 
 
 class ModelDetail(ModelSummary):
@@ -212,6 +237,8 @@ class ModelDetail(ModelSummary):
     classification: ClassificationMetrics | None = None
     regression: RegressionMetrics | None = None
     importance: ImportanceList
+    best_params: dict[str, str] | None = None
+    has_permutation: bool = False
 
 
 class PredictRequest(BaseModel):
@@ -219,13 +246,24 @@ class PredictRequest(BaseModel):
     features: dict[str, str | float | bool | None]
 
 
+class PredictionInterval(BaseModel):
+    low: float
+    high: float
+
+
+class SampleRow(BaseModel):
+    values: dict[str, str | float | None]
+
+
 class PredictResponse(BaseModel):
     model_id: str
     problem_type: ProblemType
     prediction: str | float
-    # Sınıflandırmada sınıf→olasılık; regresyonda None (Faz 4'te aralık eklenecek).
+    # Sınıflandırmada sınıf→olasılık; regresyonda None.
     probabilities: dict[str, float] | None = None
     confidence: float | None = None
+    # Regresyonda ~%95 güven aralığı (residual std'den); sınıflandırmada None.
+    interval: PredictionInterval | None = None
     warnings: list[str] = []
 
 

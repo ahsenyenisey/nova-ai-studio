@@ -1,11 +1,17 @@
 """Model endpoint'leri:
-- GET  /api/models                      → model listesi
-- GET  /api/models/{id}                 → model detayı
-- GET  /api/models/{id}/importance      → feature importance (top-N / genişletilmiş)
-- POST /api/predict                     → tekil tahmin (minimal; şema Faz 4-uyumlu)
+- GET    /api/models                      → model listesi
+- GET    /api/models/{id}                 → model detayı
+- GET    /api/models/{id}/importance      → önem (model | permutation)
+- GET    /api/models/{id}/sample-row      → kaynak veriden örnek satır
+- DELETE /api/models/{id}                 → modeli sil
+- POST   /api/predict                     → tekil tahmin
+- POST   /api/predict/batch               → toplu CSV tahmini
 """
 
 from __future__ import annotations
+
+import random
+from typing import Literal
 
 from fastapi import APIRouter, Form, Query, UploadFile
 
@@ -17,12 +23,13 @@ from models.schemas import (
     ModelSummary,
     PredictRequest,
     PredictResponse,
+    SampleRow,
 )
 from routers.upload import read_limited
-from services import models_store
+from services import models_store, storage
 from services.csv_loader import decode_bytes, parse_csv
-from services.errors import empty_file
-from services.training import run_batch_prediction, run_prediction
+from services.errors import empty_file, model_dataset_evicted
+from services.prediction import run_batch_prediction, run_prediction
 
 router = APIRouter(tags=["models"])
 
@@ -50,9 +57,49 @@ def get_model(model_id: str) -> ModelDetail:
 def get_importance(
     model_id: str,
     limit: int | None = Query(default=None, ge=1),
+    method: Literal["model", "permutation"] = Query(default="model"),
 ) -> ImportanceList:
     record = models_store.get_model(model_id)
-    return models_store.build_importance(record, limit)
+    return models_store.build_importance(record, limit, method)
+
+
+@router.get(
+    "/api/models/{model_id}/sample-row",
+    response_model=SampleRow,
+    responses={404: {"model": ErrorResponse}, 409: {"model": ErrorResponse}},
+)
+def sample_row(model_id: str) -> SampleRow:
+    record = models_store.get_model(model_id)
+    if not storage.has_dataset(record.dataset_id):
+        raise model_dataset_evicted()
+    df = storage.get_dataset(record.dataset_id).df
+    idx = random.randint(0, len(df) - 1)
+    row = df.iloc[idx]
+    values: dict[str, str | float | None] = {}
+    for f in record.feature_schema:
+        v = row[f.name]
+        if v is None or (not isinstance(v, str) and _is_na(v)):
+            values[f.name] = None
+        elif f.type == "numeric":
+            values[f.name] = float(v)
+        else:
+            values[f.name] = str(v)
+    return SampleRow(values=values)
+
+
+def _is_na(value: object) -> bool:
+    import pandas as pd
+
+    return bool(pd.isna(value))
+
+
+@router.delete(
+    "/api/models/{model_id}",
+    status_code=204,
+    responses={404: {"model": ErrorResponse}},
+)
+def delete_model(model_id: str) -> None:
+    models_store.delete_model(model_id)
 
 
 @router.post(

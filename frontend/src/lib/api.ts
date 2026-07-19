@@ -11,11 +11,13 @@ import type {
 } from "@/lib/eda-types";
 import type {
   ImportanceList,
+  ImportanceMethod,
   ModelDetail,
   ModelSummary,
   ModelType,
   PredictResponse,
   ProblemType,
+  SampleRow,
   TargetAnalysis,
   TrainEvent,
 } from "@/lib/train-types";
@@ -120,6 +122,7 @@ export interface TrainBody {
   target_column: string;
   model_type: ModelType;
   problem_type?: ProblemType;
+  tune?: boolean;
 }
 
 /**
@@ -180,13 +183,37 @@ export async function fetchModel(modelId: string): Promise<ModelDetail> {
 
 export async function fetchImportance(
   modelId: string,
-  limit?: number,
+  opts?: { limit?: number; method?: ImportanceMethod },
 ): Promise<ImportanceList> {
-  const query = limit ? `?limit=${limit}` : "";
+  const params = new URLSearchParams();
+  if (opts?.limit) params.set("limit", String(opts.limit));
+  if (opts?.method) params.set("method", opts.method);
+  const query = params.toString() ? `?${params}` : "";
   const res = await fetch(
     `${BASE_URL}/api/models/${encodeURIComponent(modelId)}/importance${query}`,
   );
   return parseOrThrow<ImportanceList>(res);
+}
+
+export async function deleteModel(modelId: string): Promise<void> {
+  const res = await fetch(
+    `${BASE_URL}/api/models/${encodeURIComponent(modelId)}`,
+    { method: "DELETE" },
+  );
+  if (!res.ok) {
+    const data: unknown = await res.json().catch(() => null);
+    if (isErrorBody(data)) {
+      throw new ApiError(data.error.code, data.error.message, res.status);
+    }
+    throw new ApiError("UNKNOWN", `Silinemedi (${res.status}).`, res.status);
+  }
+}
+
+export async function fetchSampleRow(modelId: string): Promise<SampleRow> {
+  const res = await fetch(
+    `${BASE_URL}/api/models/${encodeURIComponent(modelId)}/sample-row`,
+  );
+  return parseOrThrow<SampleRow>(res);
 }
 
 export async function predict(

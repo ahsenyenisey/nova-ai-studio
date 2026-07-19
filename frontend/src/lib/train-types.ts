@@ -42,6 +42,24 @@ export interface ConfusionMatrix {
   matrix: number[][];
 }
 
+export interface RocPoint {
+  fpr: number;
+  tpr: number;
+}
+
+export interface RocCurve {
+  points: RocPoint[];
+  auc: number;
+  positive_label: string;
+}
+
+export interface CvScore {
+  mean: number;
+  std: number;
+  folds: number;
+  metric: string;
+}
+
 export interface ClassificationMetrics {
   accuracy: number;
   f1: number;
@@ -49,6 +67,8 @@ export interface ClassificationMetrics {
   recall: number;
   class_labels: string[];
   confusion_matrix: ConfusionMatrix;
+  auc: number | null;
+  roc: RocCurve | null;
 }
 
 export interface ResidualPoint {
@@ -61,6 +81,7 @@ export interface RegressionMetrics {
   mae: number;
   rmse: number;
   residuals: ResidualPoint[];
+  residual_std: number;
 }
 
 export interface FeatureImportanceItem {
@@ -86,6 +107,7 @@ export interface ModelSummary {
   source_dataset_available: boolean;
   primary_metric_name: string;
   primary_metric_value: number;
+  cv: CvScore | null;
 }
 
 export interface ModelDetail extends ModelSummary {
@@ -93,6 +115,13 @@ export interface ModelDetail extends ModelSummary {
   classification: ClassificationMetrics | null;
   regression: RegressionMetrics | null;
   importance: ImportanceList;
+  best_params: Record<string, string> | null;
+  has_permutation: boolean;
+}
+
+export interface PredictionInterval {
+  low: number;
+  high: number;
 }
 
 export interface PredictResponse {
@@ -101,8 +130,15 @@ export interface PredictResponse {
   prediction: string | number;
   probabilities: Record<string, number> | null;
   confidence: number | null;
+  interval: PredictionInterval | null;
   warnings: string[];
 }
+
+export interface SampleRow {
+  values: Record<string, string | number | null>;
+}
+
+export type ImportanceMethod = "model" | "permutation";
 
 export const MODEL_LABELS: Record<ModelType, string> = {
   random_forest: "Random Forest",

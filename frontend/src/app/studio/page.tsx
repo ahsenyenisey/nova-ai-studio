@@ -1,13 +1,11 @@
 "use client";
 
 import { AnimatePresence, motion } from "framer-motion";
-import { AlertTriangle, Boxes, Loader2 } from "lucide-react";
-import Link from "next/link";
+import { AlertTriangle, Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useCallback, useState } from "react";
 
 import { Dropzone } from "@/components/studio/Dropzone";
-import { Button } from "@/components/ui/Button";
 import { ApiError, uploadCsv } from "@/lib/api";
 import { EASE_CINEMATIC } from "@/lib/motion";
 
@@ -38,13 +36,6 @@ export default function StudioPage() {
 
   return (
     <main className="mx-auto flex min-h-screen max-w-3xl flex-col justify-center px-6 py-16">
-      <div className="absolute right-6 top-6">
-        <Link href="/studio/models">
-          <Button variant="ghost" icon={Boxes} className="!px-4 !py-2 text-sm">
-            Modeller
-          </Button>
-        </Link>
-      </div>
 
       <motion.div
         initial={{ opacity: 0, y: 16 }}

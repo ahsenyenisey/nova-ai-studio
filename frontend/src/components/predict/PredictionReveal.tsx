@@ -65,6 +65,28 @@ export function PredictionReveal({ result }: { result: PredictResponse }) {
             />
           </motion.p>
         ) : null}
+
+        {result.interval ? (
+          <motion.p
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.4 }}
+            className="mt-3 font-metric text-sm text-text-muted"
+          >
+            ~%95 aralık:{" "}
+            <span className="text-accent-cyan">
+              [
+              {result.interval.low.toLocaleString("tr-TR", {
+                maximumFractionDigits: 2,
+              })}
+              {" · "}
+              {result.interval.high.toLocaleString("tr-TR", {
+                maximumFractionDigits: 2,
+              })}
+              ]
+            </span>
+          </motion.p>
+        ) : null}
       </div>
 
       {/* Sınıf olasılıkları */}

@@ -47,14 +47,25 @@ export function TrainDashboard({ datasetId }: { datasetId: string }) {
   }, [datasetId]);
 
   const onTrain = useCallback(
-    async (target: string, modelType: ModelType, problemType: ProblemType) => {
+    async (
+      target: string,
+      modelType: ModelType,
+      problemType: ProblemType,
+      tune: boolean,
+    ) => {
       setEvents([]);
       setResult(null);
       setTrainError(null);
       setRunning(true);
       try {
         await trainStream(
-          { dataset_id: datasetId, target_column: target, model_type: modelType, problem_type: problemType },
+          {
+            dataset_id: datasetId,
+            target_column: target,
+            model_type: modelType,
+            problem_type: problemType,
+            tune,
+          },
           (event) => {
             setEvents((prev) => [...prev, event]);
             if (event.stage === "done" && event.detail) setResult(event.detail);
@@ -159,6 +170,7 @@ export function TrainDashboard({ datasetId }: { datasetId: string }) {
             <FeatureImportance
               modelId={result.model_id}
               initial={result.importance}
+              hasPermutation={result.has_permutation}
             />
           </div>
         </>

@@ -1,31 +1,26 @@
-# NOVA — Faz 5 Aday Listesi (Backlog)
+# NOVA — Backlog
 
-Faz 1–4 kapsamı dışında kalan, ileride değerlendirilebilecek fikirler. Bu dosya
-bir **öneri havuzudur**; buradaki hiçbir madde onaysız uygulanmaz.
+Bu dosya bir **öneri havuzudur**; buradaki hiçbir madde onaysız uygulanmaz.
 
-## Kalıcılık & Ölçek
-- **Kalıcı depolama:** veri setleri ve modeller şu an bellekte (dict, LRU ~20).
-  Diske/DB'ye kalıcılık (ör. joblib ile model, parquet ile veri).
-- **Toplu tahminde sunucu-taraflı streaming:** çok büyük CSV'lerde tüm satırları
-  belleğe/JSON'a almak yerine akışla işleme + doğrudan CSV yanıtı.
+## Faz 5'te uygulandı ✅
+Cross-validation, ROC/AUC eğrisi (ikili), hiperparametre ayarı (GridSearchCV),
+permutation importance, regresyon güven aralığı, sol sinematik nav rayı, tahmin
+geçmişi, "örnek satırla doldur", model silme, model karşılaştırma.
 
-## Model & Metrik
-- **Permutation importance** (mevcut: ağaç/doğrusal katsayı tabanlı önem).
-- **ROC / PR eğrisi** ve eşik ayarı (sınıflandırma).
-- **Çapraz doğrulama** ve basit **hiperparametre ayarı**.
-- **Model karşılaştırma ekranı:** birden çok modeli yan yana metrikle.
+## Açık maddeler
+
+### Kalıcılık & Ölçek
+- **Kalıcı depolama:** veri setleri ve modeller bellekte (dict, LRU ~20).
+  Diske/DB'ye kalıcılık (joblib ile model, parquet ile veri).
+- **Toplu tahminde sunucu-taraflı streaming:** çok büyük CSV'lerde satırları
+  akışla işleme + doğrudan CSV yanıtı.
+
+### Model & Metrik
+- **Çok sınıflı ROC eğrisi** (şu an çok sınıfta yalnızca macro-OVR AUC).
 - **Datetime özellik mühendisliği** (şu an datetime kategorik muamelesi görüyor).
+- **Zaman serisi** desteği.
 
-## Tahmin UX
-- **"Örnek satırla doldur":** tahmin formunu kaynak veri setinden örnek bir
-  satırla doldur. Kaynak veri gerektirir → tahliye olduysa `MODEL_DATASET_EVICTED`
-  hatasını **gerçekten** tetikler (Faz 4'te bu kod yalnızca savunmacı ele alınıyor).
-- **Tahmin geçmişi:** yapılan tekil tahminlerin oturum içi listesi.
-- **Güven aralığı (regresyon):** residual std'den tahmin aralığı.
-
-## Navigasyon & Cila
-- **Sol ikon navigasyon rayı** (CLAUDE.md yerleşim notunda geçiyor; Faz 4'te
-  minimal linklerle idare edildi).
-- **Model silme / yeniden adlandırma.**
-- **Karanlık/aydınlık ince ayar** — (not: NOVA yalnızca karanlık tema, bu düşük
-  öncelik).
+### UX & Yönetim
+- **Model yeniden adlandırma / etiketleme.**
+- **Deploy:** Docker + dağıtım (frontend Vercel, backend bir host) → canlı demo.
+- **Aydınlık tema** — (düşük öncelik; NOVA yalnızca karanlık tema).
