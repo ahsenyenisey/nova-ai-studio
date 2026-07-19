@@ -7,6 +7,7 @@ uygulaması. Estetik: *Deep Space Observatory* — bir uzay gözlemevinin komuta
 Proje anayasası ve tasarım sistemi için bkz. [`CLAUDE.md`](./CLAUDE.md).
 API sözleşmesi: [`docs/api-contract.md`](./docs/api-contract.md).
 İleriki fikirler: [`docs/backlog.md`](./docs/backlog.md).
+Ücretsiz canlıya alma (Vercel + Hugging Face Spaces): [`docs/deploy.md`](./docs/deploy.md).
 
 ## Ekran Görüntüleri
 
